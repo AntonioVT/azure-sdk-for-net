@@ -13,18 +13,18 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     {
         private readonly RequestDelegate _next;
         private readonly ServiceRequestHandlerAdapter _handler;
-        private readonly WebPubSubOptions _options;
+        private readonly RequestValidator _requestValidator;
         private readonly ILogger _logger;
 
         public WebPubSubMiddleware(
             RequestDelegate next,
-            IOptions<WebPubSubOptions> options,
             ServiceRequestHandlerAdapter handler,
+            RequestValidator requestValidator,
             ILogger<WebPubSubMiddleware> logger)
         {
             _next = next ?? throw new ArgumentNullException(nameof(next));
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
-            _options = options.Value;
+            _requestValidator = requestValidator ?? throw new ArgumentNullException(nameof(requestValidator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -33,31 +33,15 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             // Not Web PubSub requests.
             if (!context.Request.Headers.ContainsKey(Constants.Headers.CloudEvents.WebPubSubVersion))
             {
-                await _next(context);
+                await _next(context).ConfigureAwait(false);
                 return;
             }
 
             // Handle Abuse Protection
-            if (context.Request.IsPreflightRequest(out var requestHosts))
+            if (context.Request.IsPreflightRequest(out var requestOrigins))
             {
                 Log.ReceivedAbuseProtectionRequest(_logger);
-                var isValid = false;
-                if (_options == null || !_options.ValidationOptions.ContainsHost())
-                {
-                    isValid = true;
-                }
-                else
-                {
-                    foreach (var item in requestHosts)
-                    {
-                        if (_options.ValidationOptions.ContainsHost(item))
-                        {
-                            isValid = true;
-                            break;
-                        }
-                    }
-                }
-                if (isValid)
+                if (_requestValidator.IsValidOrigin(requestOrigins))
                 {
                     context.Response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, Constants.AllowedAllOrigins);
                 }
@@ -72,7 +56,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             // Not upstream business request.
             if (!context.Request.Headers.TryGetValue(Constants.Headers.CloudEvents.Hub, out var hubName))
             {
-                await _next(context);
+                await _next(context).ConfigureAwait(false);
                 return;
             }
             else
@@ -82,12 +66,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 if (hub == null)
                 {
                     Log.HubNotRegistered(_logger, hubName);
-                    await _next(context);
+                    await _next(context).ConfigureAwait(false);
                     return;
                 }
             }
 
-            await _handler.HandleRequest(context);
+            await _handler.HandleRequest(context).ConfigureAwait(false);
         }
 
         private static class Log

@@ -1,10 +1,23 @@
 # Release History
 
-## 12.3.0-beta.1 (Unreleased)
+## 12.5.0-beta.1 (Unreleased)
 
 ### Features Added
 
 ### Breaking Changes
+
+### Bugs Fixed
+
+### Other Changes
+
+## 12.4.0 (2022-01-12)
+
+### Bugs Fixed
+- Fixed a an issue when using `TableEntity.GetDateTime` that resulted in an `InvalidOperationException` exception. ([#25323](https://github.com/Azure/azure-sdk-for-net/issues/25323)) 
+- `TableClient.GenerateSasUri(...)` does not throw if the client was constructed via `TableServiceClient.GetTableClient(string tableName)` ([#25881](https://github.com/Azure/azure-sdk-for-net/issues/25881))
+- `TableClient.GenerateSasUri(...)` now generates a Uri with the table name in the path. ([#26155](https://github.com/Azure/azure-sdk-for-net/issues/26155))
+- `TableClient` and `TableServiceClient` constructors taking a connection string now properly parse Cosmos emulator connection strings. ([#26326](https://github.com/Azure/azure-sdk-for-net/issues/26326))
+## 12.3.0 (2021-11-09)
 
 ### Bugs Fixed
 - Table entities now support UInt64 (ulong) properties. ([#24750](https://github.com/Azure/azure-sdk-for-net/issues/24750))
@@ -18,8 +31,6 @@
     <RuntimeHostConfigurationOption Include="Azure.Data.Tables.DisableEscapeSingleQuotesOnGetEntity" Value="true" />
 </ItemGroup> 
   ```
-
-### Other Changes
 
 ## 12.2.1 (2021-10-14)
 
